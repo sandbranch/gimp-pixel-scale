@@ -101,7 +101,8 @@ done
 jobs="$jobs $g/b-blocks-before.png:exp-b-blocks.png:xbr:3 $g/b-mushroom-before.png:exp-b-mushroom.png:xbr:3"
 jobs="$jobs $g/b-mask-before.png:exp-b-mask.png:xbr:3 $g/b-text-before.png:exp-b-text.png:xbr:3"
 jobs="$jobs $g/e-gray-before.png:exp-e-gray.png:hqx:2"
-# shellcheck disable=SC2016
+# (the jobs are words without spaces: split on purpose)
+# shellcheck disable=SC2016,SC2086
 gimp_run --flatpak --filesystem="$top" --env=GEGL_PATH="$mod:/app/lib/gegl-0.4" -- sh -c '
   g=$1; shift
   for j; do
