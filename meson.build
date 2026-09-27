@@ -65,3 +65,13 @@ executable('sprites', 'tests/sprites.c',
     gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],
   install: false,
 )
+
+# the GIMP plug-in, Image > Scale Pixel Art... (Python, nothing to build),
+# into <plugindir>/pixel-art-scale/
+plugindir = get_option('plugindir')
+if plugindir != ''
+  install_data('plug-in/pixel-art-scale.py',
+    install_dir: plugindir / 'pixel-art-scale',
+    install_mode: 'rwxr-xr-x',
+  )
+endif
