@@ -23,15 +23,20 @@ op_args += cc.get_supported_arguments('-ffp-contract=off')
 
 scalers = files('operations/scalenx.c', 'operations/hqx.c', 'operations/xbr.c')
 
-pixel_art_scale = shared_module('pixel-art-scale',
-  ['operations/pixel-art-scale.c', scalers],
-  name_prefix: '',
-  include_directories: 'operations',
-  dependencies: [gegl_dep],
-  c_args: op_args,
-  install: true,
-  install_dir: moduledir,
-)
+# each operation is a module of its own; both include operations/pas-gegl.c
+modules = {}
+foreach op : ['pixel-art-scale', 'pixel-art-rescale']
+  modules += { op: shared_module(op,
+    ['operations' / op + '.c', scalers],
+    name_prefix: '',
+    include_directories: 'operations',
+    dependencies: [gegl_dep],
+    c_args: op_args,
+    install: true,
+    install_dir: moduledir,
+  )}
+endforeach
+pixel_art_scale = modules['pixel-art-scale']
 
 # numerical checks of the operation: tests/check.sh, or meson test -C build
 math_dep = cc.find_library('m', required: false)
@@ -41,10 +46,20 @@ check = executable('check', 'tests/check.c',
     gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],
   install: false,
 )
-test('pixel-art-scale', check, args: [pixel_art_scale], timeout: 600)
+test('pixel-art-scale', check,
+  args: [modules['pixel-art-scale'], modules['pixel-art-rescale']],
+  timeout: 600)
 
 # how long it takes on a 1024 x 1024 sprite sheet: tests/bench.sh
 executable('bench', 'tests/bench.c',
+  dependencies: [gegl_dep, math_dep],
+  c_args: ['-DGEGL_PLUGINSDIR="@0@"'.format(
+    gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],
+  install: false,
+)
+
+# the test images as PNG files, for the tests in GIMP: tests/gimp-check.sh
+executable('sprites', 'tests/sprites.c',
   dependencies: [gegl_dep, math_dep],
   c_args: ['-DGEGL_PLUGINSDIR="@0@"'.format(
     gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],

@@ -63,7 +63,7 @@ log_handler (const gchar    *domain,
 
 /* ---- loading the operation ---- */
 
-static gchar *module_dir, *module_link;
+static gchar *module_dir, *module_link[2];
 
 /*
  * GEGL loads every file in a module folder, and a build folder holds
@@ -74,18 +74,31 @@ static gchar *module_dir, *module_link;
 static int
 load_module (const char *path, int *argc, char ***argv)
 {
-  gchar *target, *search;
+  gchar *search, *dir;
+  int i;
 
-  module_dir  = g_dir_make_tmp ("pixel-art-scale-XXXXXX", NULL);
-  module_link = g_build_filename (module_dir ? module_dir : ".",
-                                  "pixel-art-scale.so", NULL);
-  target = g_canonicalize_filename (path, NULL);
-  if (!module_dir || symlink (target, module_link) != 0)
+  /* the operation, and pixel-art-rescale.so from the same folder */
+  module_dir = g_dir_make_tmp ("pixel-art-scale-XXXXXX", NULL);
+  if (!module_dir)
+    return 0;
+  dir = g_path_get_dirname (path);
+  for (i = 0; i < 2; i++)
     {
-      fprintf (stderr, "cannot link %s into a temporary folder\n", path);
-      return 0;
+      gchar *target = i ? g_build_filename (dir, "pixel-art-rescale.so", NULL)
+                        : g_canonicalize_filename (path, NULL);
+      gchar *abs = g_canonicalize_filename (target, NULL);
+
+      module_link[i] = g_build_filename (module_dir, i ? "pixel-art-rescale.so"
+                                                       : "pixel-art-scale.so", NULL);
+      if (symlink (abs, module_link[i]) != 0)
+        {
+          fprintf (stderr, "cannot link %s into a temporary folder\n", abs);
+          return 0;
+        }
+      g_free (target);
+      g_free (abs);
     }
-  g_free (target);
+  g_free (dir);
   search = g_strconcat (module_dir, G_SEARCHPATH_SEPARATOR_S,
                         GEGL_PLUGINSDIR, NULL);
   g_setenv ("GEGL_PATH", search, TRUE);
@@ -97,9 +110,11 @@ load_module (const char *path, int *argc, char ***argv)
   g_object_set (gegl_config (), "application-license", "GPL3", NULL);
   gegl_init (argc, argv);
   g_log_set_default_handler (log_handler, NULL);
-  if (!gegl_has_operation ("pixel-art:scale"))
+  if (!gegl_has_operation ("pixel-art:scale") ||
+      !gegl_has_operation ("pixel-art:rescale"))
     {
-      fprintf (stderr, "pixel-art:scale did not load from %s\n", path);
+      fprintf (stderr, "pixel-art:scale or pixel-art:rescale did not load "
+               "from the folder of %s\n", path);
       return 0;
     }
   return 1;
@@ -114,10 +129,12 @@ unload_module (void)
    * name the functions when it reports after main () */
   if (!g_getenv ("PAS_CHECK_KEEP_MODULE"))
     {
-      unlink (module_link);
+      unlink (module_link[0]);
+      unlink (module_link[1]);
       g_rmdir (module_dir);
     }
-  g_free (module_link);
+  g_free (module_link[0]);
+  g_free (module_link[1]);
   g_free (module_dir);
 }
 

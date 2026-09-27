@@ -88,7 +88,7 @@ ours=$(awk '
   /^ *#[0-9]+ / && block != "" {
     if (first && $0 !~ / in (malloc|calloc|realloc|g_malloc|g_malloc0|g_realloc|g_try_malloc|g_malloc_n|g_malloc0_n|g_realloc_n|g_strdup|g_strndup|g_memdup2|g_array_[a-z_]*|g_slice_[a-z_]*) /) {
       first = 0
-      if ($0 ~ /(pixel-art-scale|scalenx|hqx|xbr|check|common)\.[ch]/) mine = 1
+      if ($0 ~ /(pixel-art-scale|pixel-art-rescale|pas-gegl|scalenx|hqx|xbr|check|common)\.[ch]/) mine = 1
     }
   }
   END { done(); print n + 0 }' "$out/check-asan.log")

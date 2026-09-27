@@ -2,7 +2,9 @@
  * How long pixel-art:scale takes on a 1024 x 1024 sprite sheet (the test
  * sprite and blocks of noise in few colors, on transparent pixels), for
  * each algorithm and factor, with GEGL's threads and with one thread: the
- * best of three runs of rendering the whole output into memory.
+ * best of three runs of rendering the whole output into memory. Then
+ * pixel-art:rescale on the sheet scaled up with nearest neighbour, as
+ * the GIMP plug-in uses it.
  *
  *   bench <pixel-art-scale.so>
  *
@@ -39,7 +41,7 @@ sheet (void)
 }
 
 static double
-time_one (GeglBuffer *buf, const char *algorithm, int n)
+time_one (GeglBuffer *buf, const char *op, const char *algorithm, int n)
 {
   double best = 1e9;
   int i;
@@ -47,9 +49,16 @@ time_one (GeglBuffer *buf, const char *algorithm, int n)
   for (i = 0; i < 3; i++)
     {
       GeglNode *scale, *g = scale_graph (buf, algorithm, n, NULL, NULL, &scale);
-      GeglRectangle r = gegl_node_get_bounding_box (scale);
-      guint8 *out = g_malloc ((gsize) r.width * r.height * 4);
-      gint64 t0 = g_get_monotonic_time ();
+      GeglRectangle r;
+      guint8 *out;
+      gint64 t0;
+
+      gegl_node_set (scale, "operation", op, NULL);
+      gegl_node_set (scale, "factor", n, NULL);
+      set_enum (scale, "algorithm", algorithm);
+      r = gegl_node_get_bounding_box (scale);
+      out = g_malloc ((gsize) r.width * r.height * 4);
+      t0 = g_get_monotonic_time ();
 
       gegl_node_blit (scale, 1.0, &r, babl_format ("R'G'B'A u8"), out,
                       GEGL_AUTO_ROWSTRIDE, GEGL_BLIT_DEFAULT);
@@ -86,10 +95,32 @@ main (int argc, char **argv)
         double tt, t1;
 
         g_object_set (gegl_config (), "threads", threads, NULL);
-        tt = time_one (buf, algorithms[a], n);
+        tt = time_one (buf, "pixel-art:scale", algorithms[a], n);
         g_object_set (gegl_config (), "threads", 1, NULL);
-        t1 = time_one (buf, algorithms[a], n);
+        t1 = time_one (buf, "pixel-art:scale", algorithms[a], n);
         printf ("%-9s %6d %8.3f (%d) %10.3f\n", algorithms[a], n, tt, threads, t1);
+      }
+  /* in place, as the plug-in does it: on the sheet scaled up first */
+  printf ("\npixel-art:rescale on the sheet scaled up with nearest neighbour\n");
+  for (a = 0; a < 3; a++)
+    for (n = 2; n <= 4; n++)
+      {
+        Img big = img_new (1024 * n, 1024 * n);
+        GeglBuffer *bigbuf;
+        double tt, t1;
+        int x, y;
+
+        for (y = 0; y < big.h; y++)
+          for (x = 0; x < big.w; x++)
+            PX (big, x, y) = PX (im, x / n, y / n);
+        bigbuf = img_buffer (&big);
+        g_object_set (gegl_config (), "threads", threads, NULL);
+        tt = time_one (bigbuf, "pixel-art:rescale", algorithms[a], n);
+        g_object_set (gegl_config (), "threads", 1, NULL);
+        t1 = time_one (bigbuf, "pixel-art:rescale", algorithms[a], n);
+        printf ("%-9s %6d %8.3f (%d) %10.3f\n", algorithms[a], n, tt, threads, t1);
+        g_object_unref (bigbuf);
+        img_free (&big);
       }
   g_object_unref (buf);
   img_free (&im);

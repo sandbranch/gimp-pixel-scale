@@ -16,9 +16,12 @@
  *   - pieces, threads and repeated runs give the same bytes
  *   - the regions the operation asks for and invalidates, and that a
  *     change of the input shows exactly there
+ *   - pixel-art:rescale on the image scaled up with nearest neighbour is
+ *     pixel-art:scale on the image, it reads the middle of each block,
+ *     keeps the size and place, and asks for and invalidates its regions
  *   - 8-bit linear, gray, float and R~G~B~ input; infinite and empty input
  *
- *   check <pixel-art-scale.so>
+ *   check <pixel-art-scale.so>   (pixel-art-rescale.so from the same folder)
  *
  * Copyright 2026 David
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -750,6 +753,181 @@ test_regions (void)
   img_free (&in);
 }
 
+/* ---- pixel-art:rescale, on an image scaled up with nearest neighbour ---- */
+
+/* the operation named op on an image */
+static Img
+run_named (const char *op, const Img *in, const char *algorithm, int factor,
+           const char *alpha, const char *edges)
+{
+  GeglBuffer *buf = img_buffer (in);
+  GeglNode *scale;
+  GeglNode *g = scale_graph (buf, algorithm, factor, alpha, edges, &scale);
+  GeglRectangle r;
+  Img out;
+
+  gegl_node_set (scale, "operation", op, NULL);
+  gegl_node_set (scale, "factor", factor, NULL);
+  set_enum (scale, "algorithm", algorithm);
+  set_enum (scale, "alpha", alpha ? alpha : "weighted");
+  set_enum (scale, "edges", edges ? edges : "clamp");
+  r = gegl_node_get_bounding_box (scale);
+  out = render_rect (scale, &r);
+  g_object_unref (g);
+  g_object_unref (buf);
+  return out;
+}
+
+static void
+test_rescale (void)
+{
+  Img ims[4];
+  int a, i, n, m, e;
+
+  ims[0] = img_mushroom ();
+  ims[1] = img_text (TRUE);
+  ims[2] = img_palette_noise (19, 11, 131, 7, TRUE);
+  ims[3] = img_noise (9, 7, 132, TRUE);
+  for (a = 0; a < 4; a++)
+    {
+      int bad = 0, cases = 0;
+
+      for (i = 0; i < 4; i++)
+        for (n = 2; n <= 4; n++)
+          for (m = 0; m < 2; m++)
+            for (e = 0; e < 2; e++)
+              {
+                const char *edges = e ? "wrap" : "clamp";
+                Img big = run_op (&ims[i], "nearest", n, NULL, NULL);
+                Img want = run_op (&ims[i], algorithms[a], n, modes[m], edges);
+                Img got = run_named ("pixel-art:rescale", &big, algorithms[a], n,
+                                     modes[m], edges);
+
+                bad += !img_equal (&got, &want);
+                cases++;
+                img_free (&big);
+                img_free (&want);
+                img_free (&got);
+              }
+      report (bad == 0, "rescale %s of the image scaled up with nearest "
+              "neighbour = scale %s of the image (%d cases: 4 images, x2 to "
+              "x4, both alpha modes and edges)", algorithms[a], algorithms[a], cases);
+    }
+
+  /* the middle pixel of each block counts: the others may be anything */
+  {
+    int bad = 0;
+
+    for (n = 2; n <= 4; n++)
+      for (e = 0; e < 2; e++)
+        {
+          const char *edges = e ? "wrap" : "clamp";
+          Img big = run_op (&ims[0], "nearest", n, NULL, NULL);
+          Img want = run_op (&ims[0], "hqx", n, NULL, edges);
+          Img got;
+          int x, y;
+
+          for (y = 0; y < big.h; y++)
+            for (x = 0; x < big.w; x++)
+              if (x % n != n / 2 || y % n != n / 2)
+                PX (big, x, y) = rng () | 0xff000000u;
+          got = run_named ("pixel-art:rescale", &big, "hqx", n, NULL, edges);
+          bad += !img_equal (&got, &want);
+          img_free (&big);
+          img_free (&want);
+          img_free (&got);
+        }
+    report (bad == 0, "rescale reads the middle pixel of each block, also "
+            "beyond the edges (the others set to noise change nothing, x2 "
+            "to x4, both edges)");
+  }
+
+  /* a size that is not a multiple of the factor: the output keeps it and
+   * is the part of the full blocks' result */
+  {
+    Img big = run_op (&ims[2], "nearest", 3, NULL, NULL);
+    Img cut = img_crop (&big, 0, 0, big.w - 2, big.h - 1);
+    Img got = run_named ("pixel-art:rescale", &cut, "xbr", 3, NULL, NULL);
+    Img all = run_op (&ims[2], "xbr", 3, NULL, NULL);
+    Img want = img_crop (&all, 0, 0, cut.w, cut.h);
+
+    report (got.w == cut.w && got.h == cut.h && img_equal (&got, &want),
+            "rescale of a %d x %d image at x3 (not a multiple of 3): the same "
+            "size, the part of the result of the whole blocks", cut.w, cut.h);
+    img_free (&big);
+    img_free (&cut);
+    img_free (&got);
+    img_free (&all);
+    img_free (&want);
+  }
+
+  /* pieces, and an input at an offset */
+  {
+    Img big = run_op (&ims[2], "nearest", 4, NULL, NULL);
+    Img full = run_named ("pixel-art:rescale", &big, "hqx", 4, NULL, NULL);
+    GeglBuffer *buf = img_buffer_at (&big, 13, -9);
+    GeglNode *scale, *g = scale_graph (buf, "hqx", 4, NULL, NULL, &scale);
+    GeglRectangle bb;
+    int k, bad = 0;
+
+    gegl_node_set (scale, "operation", "pixel-art:rescale", NULL);
+    gegl_node_set (scale, "factor", 4, NULL);
+    set_enum (scale, "algorithm", "hqx");
+    bb = gegl_node_get_bounding_box (scale);
+    rng_seed (77);
+    for (k = 0; k < 20; k++)
+      {
+        GeglRectangle r;
+        Img piece, want;
+
+        r.width = 1 + (int) (rng () % 30);
+        r.height = 1 + (int) (rng () % 30);
+        r.x = 13 + (int) (rng () % (guint32) (full.w - r.width + 1));
+        r.y = -9 + (int) (rng () % (guint32) (full.h - r.height + 1));
+        piece = render_rect (scale, &r);
+        want = img_crop (&full, r.x - 13, r.y + 9, r.width, r.height);
+        bad += !img_equal (&piece, &want);
+        img_free (&piece);
+        img_free (&want);
+      }
+    report (bb.x == 13 && bb.y == -9 && bb.width == big.w && bb.height == big.h &&
+            bad == 0, "rescale of an input at (13, -9): the output has its "
+            "size and place, and 20 pieces are the same part of the whole");
+    g_object_unref (g);
+    g_object_unref (buf);
+    img_free (&big);
+    img_free (&full);
+  }
+
+  /* regions: output (0, 0) at x2 needs the blocks -2 to 0 (input -4 to
+   * 1); a change at input (5, 5) is block (2, 2), which shows in the
+   * blocks 0 to 4 (output 0 to 9) */
+  {
+    Img big = run_op (&ims[2], "nearest", 2, NULL, NULL);
+    GeglBuffer *buf = img_buffer (&big);
+    GeglNode *scale, *g = scale_graph (buf, "hqx", 2, NULL, NULL, &scale);
+    GeglOperation *op;
+    GeglRectangle roi = { 0, 0, 1, 1 }, r;
+
+    gegl_node_set (scale, "operation", "pixel-art:rescale", NULL);
+    gegl_node_set (scale, "factor", 2, NULL);
+    gegl_node_get_bounding_box (scale);
+    op = gegl_node_get_gegl_operation (scale);
+    r = gegl_operation_get_required_for_output (op, "input", &roi);
+    report (rect_is (&r, -4, -4, 10, 10), "rescale: output (0, 0) at x2 needs "
+            "input (-4, -4) to (5, 5), the blocks around it");
+    roi = (GeglRectangle) { 5, 5, 1, 1 };
+    r = gegl_operation_get_invalidated_by_change (op, "input", &roi);
+    report (rect_is (&r, 0, 0, 10, 10), "rescale: a change at input (5, 5) "
+            "invalidates output (0, 0) to (9, 9)");
+    g_object_unref (g);
+    g_object_unref (buf);
+    img_free (&big);
+  }
+  for (i = 0; i < 4; i++)
+    img_free (&ims[i]);
+}
+
 /* ---- formats and special inputs ---- */
 
 static void
@@ -926,6 +1104,7 @@ main (int argc, char **argv)
   test_edges ();
   test_pieces ();
   test_regions ();
+  test_rescale ();
   test_formats ();
   test_special_inputs ();
 
