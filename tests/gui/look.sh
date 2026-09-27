@@ -1,7 +1,7 @@
 #!/bin/sh
 # Opens GIMP on a Broadway display in the given mode (plugin or filter,
 # see gui-script.py), waits, does the given steps (those of
-# gimp-plugin-devtools/gui/cdp.mjs) and leaves a screenshot of the page in
+# gimp-devtools/gui/cdp.mjs) and leaves a screenshot of the page in
 # tests/output/gui/look.png; then stops GIMP. For looking at the layout.
 # Run tests/gimp-check.sh first.
 #

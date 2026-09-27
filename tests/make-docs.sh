@@ -23,7 +23,7 @@ export GIMP_RUN_HOME
 # shellcheck source=SCRIPTDIR/isolate.sh
 . "$here/isolate.sh"
 
-gimp_build=${GIMP_BUILD:-$top/../gimp-plugin-devtools/gimp-build.sh}
+gimp_build=${GIMP_BUILD:-$top/../gimp-devtools/gimp-build.sh}
 in_sdk () { "$gimp_build" "$top" "$*"; }
 if [ ! -f "$out/build-check/build.ninja" ]; then
   in_sdk meson setup tests/output/build-check -Dwarning_level=2 >/dev/null

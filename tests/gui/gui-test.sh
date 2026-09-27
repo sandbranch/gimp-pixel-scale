@@ -14,7 +14,7 @@
 #
 # Run tests/gimp-check.sh first (it installs the plug-in into the test
 # profile and puts the GEGL operations in place). Needs a headless Chrome
-# (google-chrome or chromium), node 22 and ../gimp-plugin-devtools (or
+# (google-chrome or chromium), node 22 and ../gimp-devtools (or
 # GIMP_PLUGIN_DEVTOOLS) for gui/cdp.mjs. GIMP runs isolated from your
 # folders (start.sh); before and after, your folders are listed and the
 # test fails if anything there changed. Prints PASS or FAIL for each check

@@ -9,10 +9,10 @@
 # GIMP runs with a profile of its own in tests/output (the plug-in is
 # copied there) and loads the GEGL operations from tests/output/build-check
 # through GEGL_PATH, so nothing is installed. GEGL and GIMP run isolated
-# from your folders (tests/isolate.sh, with gimp-plugin-devtools/gimp-run.sh
+# from your folders (tests/isolate.sh, with gimp-devtools/gimp-run.sh
 # if it is there): HOME and the XDG folders, also inside the Flatpak, point
 # into tests/output/gimp-home. Before and after, it lists your folders of
-# GIMP and the other apps (gimp-plugin-devtools/snapshot.sh) and fails if
+# GIMP and the other apps (gimp-devtools/snapshot.sh) and fails if
 # anything there changed. GIMP loads no fonts (--no-fonts): GIMP 3.2 can
 # hang while loading them.
 #
@@ -36,7 +36,7 @@ export GIMP_RUN_HOME
 . "$here/isolate.sh"
 snapshot_take "$out/snapshot-gimp-before.txt"
 
-gimp_build=${GIMP_BUILD:-$top/../gimp-plugin-devtools/gimp-build.sh}
+gimp_build=${GIMP_BUILD:-$top/../gimp-devtools/gimp-build.sh}
 in_sdk () { "$gimp_build" "$top" "$*"; }
 if [ ! -f "$out/build-check/build.ninja" ]; then
   in_sdk meson setup tests/output/build-check -Dwarning_level=2 >/dev/null

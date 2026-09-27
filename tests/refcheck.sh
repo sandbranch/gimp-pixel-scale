@@ -2,7 +2,7 @@
 # Compares the operation byte for byte with the reference implementations
 # (tests/refcheck.c): downloads their sources once (tests/get-refs.sh,
 # SHA-256 checked), builds them and tests/refcheck.c in the Flatpak SDK
-# (gimp-plugin-devtools/gimp-build.sh; natively with GIMP_FLATPAK=0), with
+# (gimp-devtools/gimp-build.sh; natively with GIMP_FLATPAK=0), with
 # the operation from tests/output/build-check (built here if missing), and
 # runs it. With GIMP_RUN_HOME (tests/output/gimp-home by default) the
 # build and the run are isolated from your folders.
@@ -23,7 +23,7 @@ export GIMP_RUN_HOME
 
 "$here/get-refs.sh" | grep -v '^downloading' || exit 1
 
-gimp_build=${GIMP_BUILD:-$top/../gimp-plugin-devtools/gimp-build.sh}
+gimp_build=${GIMP_BUILD:-$top/../gimp-devtools/gimp-build.sh}
 if [ "${GIMP_FLATPAK:-1}" = 1 ] && flatpak info org.gimp.GIMP >/dev/null 2>&1; then
   [ -x "$gimp_build" ] || { echo "no gimp-build.sh at $gimp_build (set GIMP_BUILD)"; exit 1; }
   in_sdk () { "$gimp_build" "$top" "$*"; }

@@ -81,7 +81,7 @@ filters for the same reason. Hence:
   50% blend (`ALPHA_BLEND_128_W`), so that blend rounds down by up to one
   more than (a + b) / 2 would. Kept here, for byte-exact results; alpha
   is blended with the plain rounded-down mean.
-- GIMP 3.2.6 on Broadway (for gimp-plugin-devtools): closed menus keep
+- GIMP 3.2.6 on Broadway (for gimp-devtools): closed menus keep
   their canvases in the page, displayed, above the dialogs in z-order.
   Only a canvas that `document.elementFromPoint` returns at its own middle
   is really visible. And a click lands in a new window only after the

@@ -169,7 +169,7 @@ You need meson, ninja, a C compiler and the GEGL development files
     ninja -C build install
 
 For the Flatpak GIMP, build inside it with
-[gimp-plugin-devtools](https://github.com/sandbranch/gimp-plugin-devtools).
+[gimp-devtools](https://github.com/sandbranch/gimp-devtools).
 It fills in the Flatpak's folders
 (`~/.var/app/org.gimp.GIMP/data/gegl-0.4/plug-ins` and
 `~/.config/GIMP/3.2/plug-ins`):
@@ -186,7 +186,7 @@ so and leaves the image as it is.
 
 `tests/run.sh` runs all of them. Nothing touches your own folders: GIMP,
 GEGL and the builds run with a throwaway HOME and XDG folders inside the
-Flatpak (`tests/isolate.sh`, from gimp-plugin-devtools). Your folders of
+Flatpak (`tests/isolate.sh`, from gimp-devtools). Your folders of
 GIMP and other apps are listed before and after, and a test fails if
 anything there changed. The test images are generated, and the sprite
 was drawn for this repository.
