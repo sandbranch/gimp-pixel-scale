@@ -12,6 +12,11 @@
 #ifndef PAS_TEST_COMMON_H
 #define PAS_TEST_COMMON_H
 
+/* each test uses some of the helpers */
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,6 +25,7 @@
 #include <unistd.h>
 
 #include <gegl.h>
+#include <gegl-plugin.h>
 #include <glib/gstdio.h>
 
 /* ---- reporting ---- */

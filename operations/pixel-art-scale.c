@@ -163,7 +163,7 @@ get_bounding_box (GeglOperation *operation)
 /* the input pixels under the output rectangle roi, with the border the
  * scalers read; when wrapping around and the border crosses an edge of
  * the image, the whole width (or height) of it, where the border comes
- * from */
+ * from (an infinite input has no edges) */
 static GeglRectangle
 input_for (GeglOperation *operation, const GeglRectangle *roi)
 {
@@ -180,15 +180,13 @@ input_for (GeglOperation *operation, const GeglRectangle *roi)
       GeglRectangle empty = { 0, 0, 0, 0 };
       return empty;
     }
-  if (in && gegl_rectangle_is_infinite_plane (in))
-    return *in;
-
   x0 = floor_div (roi->x, n) - m;
   y0 = floor_div (roi->y, n) - m;
   x1 = floor_div (roi->x + roi->width - 1, n) + 1 + m;
   y1 = floor_div (roi->y + roi->height - 1, n) + 1 + m;
 
-  if (in && o->edges == PAS_EDGES_WRAP && in->width > 0 && in->height > 0)
+  if (in && o->edges == PAS_EDGES_WRAP && in->width > 0 && in->height > 0 &&
+      !gegl_rectangle_is_infinite_plane (in))
     {
       if (x0 < in->x || x1 > in->x + in->width)
         {

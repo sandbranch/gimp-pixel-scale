@@ -32,3 +32,21 @@ pixel_art_scale = shared_module('pixel-art-scale',
   install: true,
   install_dir: moduledir,
 )
+
+# numerical checks of the operation: tests/check.sh, or meson test -C build
+math_dep = cc.find_library('m', required: false)
+check = executable('check', 'tests/check.c',
+  dependencies: [gegl_dep, math_dep],
+  c_args: ['-DGEGL_PLUGINSDIR="@0@"'.format(
+    gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],
+  install: false,
+)
+test('pixel-art-scale', check, args: [pixel_art_scale], timeout: 600)
+
+# how long it takes on a 1024 x 1024 sprite sheet: tests/bench.sh
+executable('bench', 'tests/bench.c',
+  dependencies: [gegl_dep, math_dep],
+  c_args: ['-DGEGL_PLUGINSDIR="@0@"'.format(
+    gegl_dep.get_variable(pkgconfig: 'pluginsdir'))],
+  install: false,
+)
