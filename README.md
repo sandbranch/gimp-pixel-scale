@@ -1,4 +1,4 @@
-# gegl-pixel-scale
+# gimp-pixel-scale
 
 Pixel art scalers for GIMP 3: hqx (hq2x, hq3x, hq4x), xBR, Scale2x,
 Scale3x, Scale4x (EPX) and nearest neighbour, as GEGL operations and a

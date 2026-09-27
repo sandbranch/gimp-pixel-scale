@@ -140,7 +140,7 @@ def run(procedure, run_mode, image, drawables, config, data):
     if OP not in Gimp.DrawableFilter.operation_get_available():
         return fail(procedure, 'The GEGL operation %s is not installed: put '
                     'pixel-art-rescale.so into the folder of GEGL operations '
-                    '(see the README of gegl-pixel-scale) and restart GIMP.' % OP)
+                    '(see the README of gimp-pixel-scale) and restart GIMP.' % OP)
     if run_mode == Gimp.RunMode.INTERACTIVE and not show_dialog(procedure, config):
         return procedure.new_return_values(Gimp.PDBStatusType.CANCEL, GLib.Error())
     factor = config.get_property('factor')

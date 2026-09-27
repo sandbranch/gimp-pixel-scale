@@ -1,4 +1,4 @@
-project('gegl-pixel-scale', 'c',
+project('gimp-pixel-scale', 'c',
   version: '0.1',
   license: 'GPL-3.0-or-later',
   meson_version: '>= 0.60.0',
@@ -18,7 +18,7 @@ endif
 # hqx converts colors to YUV in double precision, exactly as its reference
 # does: no fused multiply-adds, whatever -march says
 cc = meson.get_compiler('c')
-op_args = ['-DGETTEXT_PACKAGE="gegl-pixel-scale"']
+op_args = ['-DGETTEXT_PACKAGE="gimp-pixel-scale"']
 op_args += cc.get_supported_arguments('-ffp-contract=off')
 
 scalers = files('operations/scalenx.c', 'operations/hqx.c', 'operations/xbr.c')
