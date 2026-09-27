@@ -71,6 +71,18 @@ static gchar *module_dir, *module_link[2];
  * own. GEGL_PATH replaces GEGL's own list of folders, so that an installed
  * copy of the operation (in the user's folder) is not loaded instead.
  */
+static void
+remove_module_links (void)
+{
+  int i;
+
+  for (i = 0; i < 2; i++)
+    if (module_link[i])
+      unlink (module_link[i]);
+  if (module_dir)
+    g_rmdir (module_dir);
+}
+
 static int
 load_module (const char *path, int *argc, char ***argv)
 {
@@ -93,6 +105,7 @@ load_module (const char *path, int *argc, char ***argv)
       if (symlink (abs, module_link[i]) != 0)
         {
           fprintf (stderr, "cannot link %s into a temporary folder\n", abs);
+          remove_module_links ();
           return 0;
         }
       g_free (target);
@@ -115,6 +128,7 @@ load_module (const char *path, int *argc, char ***argv)
     {
       fprintf (stderr, "pixel-art:scale or pixel-art:rescale did not load "
                "from the folder of %s\n", path);
+      remove_module_links ();
       return 0;
     }
   return 1;
@@ -128,11 +142,7 @@ unload_module (void)
    * only at the end, or not at all for LeakSanitizer, which needs it to
    * name the functions when it reports after main () */
   if (!g_getenv ("PAS_CHECK_KEEP_MODULE"))
-    {
-      unlink (module_link[0]);
-      unlink (module_link[1]);
-      g_rmdir (module_dir);
-    }
+    remove_module_links ();
   g_free (module_link[0]);
   g_free (module_link[1]);
   g_free (module_dir);
