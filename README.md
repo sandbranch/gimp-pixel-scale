@@ -33,8 +33,9 @@ GIMP 3 has no pixel art scaler. What was checked on 2026-09-27:
   blending, from 2013, whose author says it "may not fully represent the
   original routine". There is no hqx, and no xBR at 3x or 4x. G'MIC
   filters are always destructive.
-- **GIMP 3.2.6** lists 259 operations with `gegl --list-all` in the
-  Flatpak. None of them is a pixel art scaler. `gegl:antialias` uses
+- **GEGL 0.4.72**, the GEGL of GIMP 3.2, has no pixel art scaler among
+  its operations (checked in GIMP 3.2.6's GEGL, 259 operations, and in
+  Ubuntu's build for GIMP 3.2.8, 208). `gegl:antialias` uses
   Scale3x to smooth edges but keeps the size.
 
 ## Using it in GIMP
@@ -82,6 +83,9 @@ If you paint on the scaled layer while the filter is on, only the middle
 pixel of each block counts.
 
 ## On the command line and in GEGL
+
+With GEGL's command line tool (`sudo apt install gegl` on Debian and
+Ubuntu):
 
     gegl sprite.png -o sprite-4x.png -- pixel-art:scale algorithm=xbr factor=4
 
@@ -162,17 +166,17 @@ under transparent pixels change nothing that shows.
 ## Building and installing
 
 You need meson, ninja, a C compiler and the GEGL development files
-(0.4.62 or newer). For a native GIMP 3:
+(0.4.62 or newer), which come with GIMP's. For GIMP 3 on Debian and
+Ubuntu:
 
+    sudo apt install gimp libgimp-3.0-dev meson ninja-build
     meson setup build -Dmoduledir=$HOME/.local/share/gegl-0.4/plug-ins \
                       -Dplugindir=$HOME/.config/GIMP/3.2/plug-ins
     ninja -C build install
 
-For the Flatpak GIMP, build inside it with
-[gimp-devtools](https://github.com/sandbranch/gimp-devtools).
-It fills in the Flatpak's folders
-(`~/.var/app/org.gimp.GIMP/data/gegl-0.4/plug-ins` and
-`~/.config/GIMP/3.2/plug-ins`):
+or the same through
+[gimp-devtools](https://github.com/sandbranch/gimp-devtools), which
+finds those folders itself:
 
     gimp-build.sh . meson setup build -Dmoduledir=\$GEGL_OPDIR -Dplugindir=\$GIMP_PLUGINDIR
     gimp-build.sh . ninja -C build install
@@ -185,14 +189,14 @@ so and leaves the image as it is.
 ## Tests
 
 `tests/run.sh` runs all of them. Nothing touches your own folders: GIMP,
-GEGL and the builds run with a throwaway HOME and XDG folders inside the
-Flatpak (`tests/isolate.sh`, from gimp-devtools). Your folders of
+GEGL and the builds run natively with a throwaway HOME and XDG folders
+(`tests/isolate.sh`, from gimp-devtools). Your folders of
 GIMP and other apps are listed before and after, and a test fails if
 anything there changed. The test images are generated, and the sprite
 was drawn for this repository.
 
-- `tests/check.sh`: 67 checks (`tests/check.c`), built and run twice in
-  the Flatpak SDK, as usual and with AddressSanitizer and UBSan (leaks
+- `tests/check.sh`: 67 checks (`tests/check.c`), built and run twice
+  against the native GEGL, as usual and with AddressSanitizer and UBSan (leaks
   in this code, and leaked GeglBuffers, are checked too). They cover:
   - output size and place for every algorithm and factor, down to 1 x 1,
     1 x 7 and 7 x 1, and with an offset origin;
@@ -240,9 +244,9 @@ was drawn for this repository.
   table differs from the hqx library's for 10 426 colors, and so FFmpeg's
   results differ from the library's in 9, 13 and 35 pixels of these
   images (hq2x, hq3x, hq4x). This operation follows the hqx library.
-- `tests/gimp-check.sh`: the plug-in and the filter in the Flatpak GIMP
-  3.2.6, without a window, compared with the `gegl` command line byte
-  for byte. It covers every algorithm and factor, a layered image (an
+- `tests/gimp-check.sh`: the plug-in and the filter in GIMP 3.2,
+  without a window, compared with the operation on the command line
+  (`tests/gegl-op.py`, as `gegl` runs it) byte for byte. It covers every algorithm and factor, a layered image (an
   offset, a group, a layer mask, a channel, a path, a guide), the filter
   route with its XCF round trip and a later change, "keep the filter",
   a grayscale image, and the plug-in without the operations installed.
@@ -254,8 +258,8 @@ was drawn for this repository.
 
 ## Speed
 
-On a Ryzen 9 5900X (12 cores, 24 threads), GIMP 3.2.6's Flatpak GEGL
-0.4.72, GCC 15.2 at -O2: a 1024 x 1024 sprite sheet, rendered whole
+On a Ryzen 9 5900X (12 cores, 24 threads), GEGL 0.4.72 (as GIMP 3.2.6
+shipped it, measured 2026-11), GCC 15.2 at -O2: a 1024 x 1024 sprite sheet, rendered whole
 into memory, best of three runs, in seconds.
 
 | | x2 | x3 | x4 | x4, 1 thread |

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Times the operation on a 1024 x 1024 sprite sheet (tests/bench.c), for
-# each algorithm and factor, in the Flatpak SDK like tests/check.sh (or
-# natively with GIMP_FLATPAK=0), isolated from your folders.
+# each algorithm and factor, built like tests/check.sh against the native
+# GEGL, isolated from your folders.
 #
 # Copyright 2026 David
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -15,11 +15,8 @@ GIMP_RUN_HOME=${GIMP_RUN_HOME:-$out/gimp-home}
 export GIMP_RUN_HOME
 
 gimp_build=${GIMP_BUILD:-$top/../gimp-devtools/gimp-build.sh}
-if [ "${GIMP_FLATPAK:-1}" = 1 ] && flatpak info org.gimp.GIMP >/dev/null 2>&1; then
-  in_sdk () { "$gimp_build" "$top" "$*"; }
-else
-  in_sdk () { (cd "$top" && sh -c "$*"); }
-fi
+[ -x "$gimp_build" ] || { echo "no gimp-build.sh at $gimp_build (set GIMP_BUILD)"; exit 1; }
+in_sdk () { "$gimp_build" "$top" "$*"; }
 
 if [ ! -f "$out/build-check/build.ninja" ]; then
   in_sdk meson setup tests/output/build-check -Dwarning_level=2 >/dev/null

@@ -1,8 +1,8 @@
 #!/bin/sh
 # Tests the plug-in Image > Scale Pixel Art... and the filter
-# pixel-art:rescale in the Flatpak GIMP, without a window
+# pixel-art:rescale in the native GIMP, without a window
 # (tests/gimp-check.py), and compares what GIMP made with the gegl command
-# line (pixel-art:scale on the original pixels), byte for byte. Fully
+# line (tests/gegl-op.py: pixel-art:scale on the original pixels), byte for byte. Fully
 # transparent pixels count as equal whatever color they hide (GIMP's PNG
 # export drops those colors).
 #
@@ -10,7 +10,7 @@
 # copied there) and loads the GEGL operations from tests/output/build-check
 # through GEGL_PATH, so nothing is installed. GEGL and GIMP run isolated
 # from your folders (tests/isolate.sh, with gimp-devtools/gimp-run.sh
-# if it is there): HOME and the XDG folders, also inside the Flatpak, point
+# if it is there): HOME and the XDG folders point
 # into tests/output/gimp-home. Before and after, it lists your folders of
 # GIMP and the other apps (gimp-devtools/snapshot.sh) and fails if
 # anything there changed. GIMP loads no fonts (--no-fonts): GIMP 3.2 can
@@ -56,7 +56,7 @@ chmod 755 "$out/gimp-profile/plug-ins/pixel-art-scale/pixel-art-scale.py"
 status=0
 run_gimp () {
   phase=$1 path=$2
-  gimp_run --timeout=900 --flatpak --filesystem="$top" \
+  gimp_run --timeout=900 \
     --env=PAS_OUT="$g" --env=PAS_IMAGES="$out/images" --env=PAS_PHASE="$phase" \
     --env=GIMP3_DIRECTORY="$out/gimp-profile" \
     --env=GEGL_PATH="$path" \
@@ -72,10 +72,11 @@ run_gimp () {
   fi
 }
 
+gegl_ops=$(pkg-config --variable=pluginsdir gegl-0.4)
 echo "== GIMP"
-run_gimp main "$mod:/app/lib/gegl-0.4"
+run_gimp main "$mod:$gegl_ops"
 echo "== GIMP without the GEGL operations"
-run_gimp missing "/app/lib/gegl-0.4"
+run_gimp missing "$gegl_ops"
 
 # the expected results, from the gegl command line: raw dumps become PNG
 # files first
@@ -103,14 +104,14 @@ jobs="$jobs $g/b-mask-before.png:exp-b-mask.png:xbr:3 $g/b-text-before.png:exp-b
 jobs="$jobs $g/e-gray-before.png:exp-e-gray.png:hqx:2"
 # (the jobs are words without spaces: split on purpose)
 # shellcheck disable=SC2016,SC2086
-gimp_run --flatpak --filesystem="$top" --env=GEGL_PATH="$mod:/app/lib/gegl-0.4" -- sh -c '
-  g=$1; shift
+gimp_run --env=GEGL_PATH="$mod:$gegl_ops" -- sh -c '
+  op=$1 g=$2; shift 2
   for j; do
     IFS=: read -r in exp a n <<EOT
 $j
 EOT
-    gegl "$in" -o "$g/$exp" -- pixel-art:scale algorithm=$a factor=$n || echo "gegl failed: $j"
-  done' sh "$g" $jobs
+    python3 "$op" "$in" "$g/$exp" pixel-art:scale algorithm=$a factor=$n || echo "gegl failed: $j"
+  done' sh "$here/gegl-op.py" "$g" $jobs
 
 python3 - "$g" <<'EOF' || status=1
 import sys

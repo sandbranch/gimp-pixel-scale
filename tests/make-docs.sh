@@ -3,7 +3,8 @@
 # drawn for this repository): docs/comparison.png, the sprite scaled 4
 # times with every algorithm, and docs/alpha.png, hqx with alpha weighted
 # and straight over a colored background. The scaling is done by the
-# operation on the gegl command line, in the Flatpak GIMP's GEGL, isolated
+# operation on the gegl command line (tests/gegl-op.py), in the native
+# GEGL, isolated
 # from your folders like the other tests. Needs python3 with PIL.
 #
 # Copyright 2026 David
@@ -34,14 +35,14 @@ cp "$out/build-check/pixel-art-scale.so" "$out/docs-modules/"
 in_sdk "tests/output/build-check/sprites tests/output/build-check/pixel-art-scale.so tests/output/images" >/dev/null
 
 # shellcheck disable=SC2016
-gimp_run --flatpak --filesystem="$top" --env=GEGL_PATH="$out/docs-modules:/app/lib/gegl-0.4" -- sh -c '
-  i=$1 d=$2
+gimp_run --env=GEGL_PATH="$out/docs-modules:$(pkg-config --variable=pluginsdir gegl-0.4)" -- sh -c '
+  op=$1 i=$2 d=$3
   for a in nearest scalenx hqx xbr; do
-    gegl "$i/mushroom.png" -o "$d/$a.png" -- pixel-art:scale algorithm=$a factor=4
+    python3 "$op" "$i/mushroom.png" "$d/$a.png" pixel-art:scale algorithm=$a factor=4
   done
   for m in weighted straight; do
-    gegl "$i/mushroom.png" -o "$d/alpha-$m.png" -- pixel-art:scale algorithm=hqx factor=4 alpha=$m
-  done' sh "$out/images" "$d"
+    python3 "$op" "$i/mushroom.png" "$d/alpha-$m.png" pixel-art:scale algorithm=hqx factor=4 alpha=$m
+  done' sh "$here/gegl-op.py" "$out/images" "$d"
 
 python3 - "$out/images" "$d" "$top/docs" <<'PY'
 import sys

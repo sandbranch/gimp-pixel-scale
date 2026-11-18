@@ -41,16 +41,16 @@ snapshot_take "$out/snapshot-before.txt"
 # positions, from the dialog's top left corner (the Broadway canvas, with
 # the shadow around the window)
 PLUGIN_PLUS=185,88
-PLUGIN_OK=630,480
+PLUGIN_OK=574,507
 FILTER_PLUS=406,167
 FILTER_TITLE=223,36
 FILTER_SPLIT=321,304
 FILTER_OK=372,339
 # in the image window (single-window mode, the page's size)
 CANVAS=900,760
-FILTERS_MENU=427,49
-ENHANCE=456,176
-RESCALE=723,500
+FILTERS_MENU=409,51
+ENHANCE=438,187
+RESCALE=686,457
 
 session () {
     name=$1
@@ -93,7 +93,7 @@ session () {
         fi
         sleep 3
         $cdp "$view" click:$CANVAS wait:300 key:3 wait:1000 click:$FILTERS_MENU wait:1200 \
-          move:450,175 wait:400 move:$ENHANCE wait:1500 key:Right wait:1200 \
+          move:450,185 wait:400 move:$ENHANCE wait:1500 key:Right wait:1200 \
           shot:"$out/03-filters-menu.png" move:700,500 wait:300 click:$RESCALE wait:4000 \
           >/dev/null
         find_dialog
@@ -146,7 +146,7 @@ if [ "${PAS_DOCS:-0}" = 1 ]; then
 import sys
 from PIL import Image
 out, docs = sys.argv[1:]
-for shot, name, box in (('01-plugin-dialog', 'plugin-dialog', (100, 100, 824, 651)),
+for shot, name, box in (('01-plugin-dialog', 'plugin-dialog', (100, 100, 767, 677)),
                         ('03-filters-menu', 'filters-menu', (0, 0, 920, 560)),
                         ('05-split-view', 'filter-split-view', (330, 200, 1270, 700))):
     try:

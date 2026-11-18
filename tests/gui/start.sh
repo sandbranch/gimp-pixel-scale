@@ -1,5 +1,5 @@
 #!/bin/sh
-# Starts the Flatpak GIMP on a Broadway display, on the port
+# Starts the native GIMP on a Broadway display, on the port
 # PAS_BROADWAY_PORT (the page is http://127.0.0.1:port/), with
 # tests/gui/gui-script.py, in the profile of tests/gimp-check.sh (which
 # installs the plug-in there) and the GEGL operations of
@@ -29,7 +29,7 @@ mkdir -p "$out"
 # no Welcome dialog: GIMP shows it when the profile is of an older
 # version, or when asked to
 if ! grep -q config-version "$profile/gimprc" 2>/dev/null; then
-    version=$(LC_ALL=C flatpak info org.gimp.GIMP | sed -n 's/^ *Version: *//p')
+    version=$(gimp-console-3.2 --version | sed 's/.* //')
     printf '(config-version "%s")\n' "$version" >> "$profile/gimprc"
 fi
 grep -q show-welcome-dialog "$profile/gimprc" 2>/dev/null ||
@@ -61,12 +61,11 @@ cat > "$profile/sessionrc" <<SESSION
 (single-window-mode yes)
 (show-tabs yes)
 SESSION
-gimp_run --flatpak --filesystem="$src" \
-  --env=GDK_BACKEND=broadway --env=BROADWAY_DISPLAY=:$display \
+gimp_run --env=GDK_BACKEND=broadway --env=BROADWAY_DISPLAY=:$display \
   --env=GIMP3_DIRECTORY="$profile" --env=PAS_OUT="$out" \
   --env=PAS_IMAGES="$tests/output/images" \
   --env=PAS_GUI_MODE="${PAS_GUI_MODE:-plugin}" \
-  --env=GEGL_PATH="$tests/output/gimp-modules:/app/lib/gegl-0.4" -- sh -c \
+  --env=GEGL_PATH="$tests/output/gimp-modules:$(pkg-config --variable=pluginsdir gegl-0.4)" -- sh -c \
   "broadwayd --port $port :$display & bw=\$!; trap 'kill \$bw' EXIT; \
    i=0; while [ ! -f '$out/page-open' ] && [ \$i -lt 300 ]; do sleep 0.2; i=\$((i+1)); done; \
    gimp-3.2 --new-instance --no-splash --no-fonts \

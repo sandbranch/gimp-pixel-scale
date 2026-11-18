@@ -8,8 +8,7 @@ project('gimp-pixel-scale', 'c',
 gegl_dep = dependency('gegl-0.4', version: '>= 0.4.62')
 
 # GEGL loads user operations from $XDG_DATA_HOME/gegl-0.4/plug-ins, which is
-# ~/.local/share/gegl-0.4/plug-ins, or for the Flatpak version of GIMP
-# ~/.var/app/org.gimp.GIMP/data/gegl-0.4/plug-ins.
+# ~/.local/share/gegl-0.4/plug-ins, where GIMP finds them too.
 moduledir = get_option('moduledir')
 if moduledir == ''
   moduledir = gegl_dep.get_variable(pkgconfig: 'pluginsdir')

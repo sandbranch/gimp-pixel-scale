@@ -1,9 +1,8 @@
 #!/bin/sh
 # Builds the operation and the checks of tests/check.c twice, as usual and
 # with AddressSanitizer and UndefinedBehaviorSanitizer, and runs the checks
-# with both. With the Flatpak GIMP everything builds and runs inside it
-# (gimp-devtools/gimp-build.sh, found next to this repository or at
-# $GIMP_BUILD); with GIMP_FLATPAK=0 it uses the system GEGL.
+# with both, against the native GIMP's GEGL (gimp-devtools/gimp-build.sh,
+# found next to this repository or at $GIMP_BUILD).
 #
 #   tests/check.sh           both builds
 #   tests/check.sh quick     only the usual build
@@ -21,12 +20,8 @@ GIMP_RUN_HOME=${GIMP_RUN_HOME:-$out/gimp-home}
 export GIMP_RUN_HOME
 
 gimp_build=${GIMP_BUILD:-$top/../gimp-devtools/gimp-build.sh}
-if [ "${GIMP_FLATPAK:-1}" = 1 ] && flatpak info org.gimp.GIMP >/dev/null 2>&1; then
-  [ -x "$gimp_build" ] || { echo "no gimp-build.sh at $gimp_build (set GIMP_BUILD)"; exit 1; }
-  in_sdk () { "$gimp_build" "$top" "$*"; }
-else
-  in_sdk () { (cd "$top" && sh -c "$*"); }
-fi
+[ -x "$gimp_build" ] || { echo "no gimp-build.sh at $gimp_build (set GIMP_BUILD)"; exit 1; }
+in_sdk () { "$gimp_build" "$top" "$*"; }
 
 # builds into tests/output/<name> with the given meson options
 build () {
